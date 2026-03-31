@@ -1,0 +1,65 @@
+# =============================================================
+# EKS Values — my-java-app Helm Chart
+# =============================================================
+# Deploys the Java app on Fargate (via label selector) and
+# phpMyAdmin on EC2 nodes (no Fargate label).
+#
+#   helm install my-app ./helm/my-java-app -f helm/eks-values.yaml
+# =============================================================
+
+# ── Replica count ────────────────────────────────────────────
+replicaCount: 3
+
+# ── Application image ────────────────────────────────────────
+image:
+  repository: alikakavand/demo-app
+  tag: "eks-amd64"
+  pullPolicy: IfNotPresent
+
+# ── Private registry credentials ─────────────────────────────
+imagePullSecrets:
+  - name: dockerhub-secret
+
+# ── Fargate scheduling ───────────────────────────────────────
+# This label is added ONLY to the Java app pods.
+# The Fargate profile must match:  namespace=default, labels: scheduling=fargate
+# phpMyAdmin pods do NOT get this label → they stay on EC2.
+podLabels:
+  scheduling: fargate
+
+# ── Service ───────────────────────────────────────────────────
+service:
+  type: LoadBalancer
+  port: 8080
+
+# ── Ingress ───────────────────────────────────────────────────
+# Disabled — using LoadBalancer service to expose the app on EKS.
+# Enable and configure if you install the AWS ALB Ingress Controller.
+ingress:
+  enabled: false
+
+# ── Database connection — ConfigMap ──────────────────────────
+database:
+  server: mysql-primary
+  name: mydb
+  user: ali
+
+# ── Database credentials — Secret ────────────────────────────
+# Pass real passwords at deploy time:
+#   helm install ... --set secrets.mysqlPassword=<real>
+secrets:
+  mysqlRootPassword: "change-me-root"
+  mysqlPassword: "change-me-password"
+  mysqlReplicationPassword: "change-me-repl"
+
+# ── phpMyAdmin ───────────────────────────────────────────────
+# Runs on EC2 (no Fargate label on its pods).
+phpmyadmin:
+  enabled: true
+  image:
+    repository: phpmyadmin
+    tag: "5.2"
+    pullPolicy: IfNotPresent
+  service:
+    type: LoadBalancer
+    port: 8081

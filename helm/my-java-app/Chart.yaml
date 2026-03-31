@@ -1,0 +1,15 @@
+apiVersion: v2
+name: my-java-app
+description: >
+  Helm chart for the Java demo application.
+  Includes the app deployment, service, ingress, MySQL configmap,
+  MySQL secret, and an optional phpMyAdmin admin UI.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - java
+  - spring-boot
+  - mysql
+maintainers:
+  - name: Ali

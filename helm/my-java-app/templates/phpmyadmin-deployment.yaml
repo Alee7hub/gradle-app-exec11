@@ -1,0 +1,46 @@
+{{- if .Values.phpmyadmin.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "my-java-app.fullname" . }}-phpmyadmin
+  labels:
+    {{- include "my-java-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: phpmyadmin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "my-java-app.name" . }}-phpmyadmin
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "my-java-app.name" . }}-phpmyadmin
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: phpmyadmin
+    spec:
+      containers:
+        - name: phpmyadmin
+          image: "{{ .Values.phpmyadmin.image.repository }}:{{ .Values.phpmyadmin.image.tag }}"
+          imagePullPolicy: {{ .Values.phpmyadmin.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          env:
+            - name: PMA_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "my-java-app.configmapName" . }}
+                  key: DB_SERVER
+            - name: PMA_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "my-java-app.configmapName" . }}
+                  key: DB_USER
+            - name: PMA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "my-java-app.secretName" . }}
+                  key: mysql-password
+{{- end }}

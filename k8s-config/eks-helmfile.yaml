@@ -1,0 +1,33 @@
+# ──────────────────────────────────────────────────────────────
+# EKS Helmfile — deploys the Java app + MySQL on EKS.
+#
+# Java app   → 3 replicas on Fargate  (label: scheduling=fargate)
+# MySQL      → EC2 nodes              (no Fargate label)
+# phpMyAdmin → EC2 nodes              (no Fargate label)
+#
+# Run from the project root:
+#   helmfile -f k8s-config/eks-helmfile.yaml sync
+# ──────────────────────────────────────────────────────────────
+
+repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+
+releases:
+  # ── Java application (Fargate) ─────────────────────────────
+  # Deployed first so the Secret it creates exists before MySQL
+  # reads it via auth.existingSecret.
+  - name: my-java-app
+    chart: ../helm/my-java-app
+    namespace: default
+    values:
+      - ../helm/eks-values.yaml
+
+  # ── MySQL (EC2 nodes) ──────────────────────────────────────
+  - name: mysql
+    chart: bitnami/mysql
+    namespace: default
+    needs:
+      - my-java-app
+    values:
+      - eks-mysql-values.yaml

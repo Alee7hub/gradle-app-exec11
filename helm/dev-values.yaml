@@ -1,0 +1,74 @@
+# =============================================================
+# Developer Example Values — my-java-app Helm Chart
+# =============================================================
+# Copy this file and customise it for your environment, then
+# install / upgrade the chart with:
+#
+#   helm install my-app ./helm/my-java-app -f my-custom-values.yaml
+#   helm upgrade  my-app ./helm/my-java-app -f my-custom-values.yaml
+#
+# Values not specified here fall back to the chart defaults
+# defined in helm/my-java-app/values.yaml.
+# =============================================================
+
+# ── Replica count ────────────────────────────────────────────
+# Use 1 for dev/test; increase for staging / production.
+replicaCount: 1
+
+# ── Application image ────────────────────────────────────────
+image:
+  repository: alikakavand/demo-app   # Docker Hub image
+  tag: "exec.10"                     # Pin to a specific build tag
+  pullPolicy: Always                 # Always pull on pod start (useful in dev)
+
+# ── Private registry credentials ─────────────────────────────
+# The secret must already exist in the target namespace:
+#   kubectl create secret docker-registry dockerhub-secret \
+#     --docker-username=<user> --docker-password=<token>
+imagePullSecrets:
+  - name: dockerhub-secret
+
+# ── Service ───────────────────────────────────────────────────
+service:
+  type: ClusterIP   # ClusterIP | NodePort | LoadBalancer
+  port: 8080
+
+# ── Ingress ───────────────────────────────────────────────────
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  host: my-java-app.local    # Add this to /etc/hosts when using minikube:
+                             #   echo "$(minikube ip) my-java-app.local" | sudo tee -a /etc/hosts
+  path: /
+  pathType: Prefix
+
+# ── Database connection — ConfigMap ──────────────────────────
+database:
+  server: mysql-primary   # K8s service name of the MySQL primary pod
+  name: mydb
+  user: developer
+
+# ── Database credentials — Secret ────────────────────────────
+# IMPORTANT: Do NOT commit real passwords to version control.
+# Pass them at deploy time instead:
+#   helm install my-app ./helm/my-java-app \
+#     -f dev-values.yaml \
+#     --set secrets.mysqlPassword=<real-password>
+secrets:
+  mysqlRootPassword: "dev-root-password"
+  mysqlPassword: "dev-password"
+  mysqlReplicationPassword: "dev-repl-password"
+
+# ── phpMyAdmin (optional DB admin UI) ────────────────────────
+# Set enabled: false to skip deploying phpMyAdmin entirely.
+phpmyadmin:
+  enabled: true
+  image:
+    repository: phpmyadmin
+    tag: "5.2"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8081

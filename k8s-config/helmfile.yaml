@@ -1,0 +1,33 @@
+# ──────────────────────────────────────────────────────────────
+# Helmfile — deploys both the Java app and the MySQL database.
+#
+# Run from the project root:
+#   helmfile -f k8s-config/helmfile.yaml sync
+#
+# Or from inside k8s-config/:
+#   helmfile sync
+# ──────────────────────────────────────────────────────────────
+
+repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+
+releases:
+  # ── Java application ───────────────────────────────────────
+  # Deployed first so the Secret it creates exists before MySQL
+  # tries to read it via auth.existingSecret.
+  - name: my-java-app
+    chart: ../helm/my-java-app
+    namespace: default
+    values:
+      - ../helm/dev-values.yaml
+
+  # ── MySQL (Bitnami) ────────────────────────────────────────
+  # Uses the Secret created by the my-java-app release above.
+  - name: mysql
+    chart: bitnami/mysql
+    namespace: default
+    needs:
+      - my-java-app         # ensures the Secret exists before MySQL starts
+    values:
+      - my-values.yaml      # path relative to this helmfile

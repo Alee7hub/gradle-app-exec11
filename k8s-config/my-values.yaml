@@ -1,0 +1,25 @@
+architecture: replication
+
+global:
+  security:
+    allowInsecureImages: True
+image:
+  registry: docker.io
+  tag: latest
+  repository: bitnamilegacy/mysql
+
+auth:
+  existingSecret: mysql-secret # my-java-app-secret   # name produced by the my-java-app helm chart
+  username: ali
+  database: mydb
+
+primary:
+  persistence:
+    enabled: true
+    size: 10Gi
+
+secondary:
+  replicaCount: 1
+  persistence:
+    enabled: true
+    size: 10Gi

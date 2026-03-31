@@ -1,0 +1,78 @@
+# ──────────────────────────────────────────────
+# Java Application
+# ──────────────────────────────────────────────
+
+replicaCount: 2
+
+image:
+  repository: alikakavand/demo-app
+  tag: "exec.10"
+  pullPolicy: IfNotPresent
+
+# List of imagePullSecrets for private registries
+imagePullSecrets:
+  - name: dockerhub-secret
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Extra labels added only to the Java app pod template.
+# Used for Fargate profile label selectors on EKS.
+podLabels: {}
+
+# ──────────────────────────────────────────────
+# Service
+# ──────────────────────────────────────────────
+
+service:
+  type: ClusterIP
+  port: 8080
+
+# ──────────────────────────────────────────────
+# Ingress
+# ──────────────────────────────────────────────
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  host: my-java-app.com
+  path: /
+  pathType: Prefix
+
+# ──────────────────────────────────────────────
+# Database – ConfigMap values
+# ──────────────────────────────────────────────
+
+database:
+  # Kubernetes service name of the MySQL primary
+  server: mysql-primary
+  name: mydb
+  user: ali
+
+# ──────────────────────────────────────────────
+# Database – Secret values
+# Prefer supplying these via --set or a separate
+# sealed-secrets / external-secrets solution in
+# production. Never commit real passwords here.
+# ──────────────────────────────────────────────
+
+secrets:
+  mysqlRootPassword: "change-me-root"
+  mysqlPassword: "change-me-password"
+  mysqlReplicationPassword: "change-me-repl"
+
+# ──────────────────────────────────────────────
+# phpMyAdmin (optional DB admin UI)
+# ──────────────────────────────────────────────
+
+phpmyadmin:
+  enabled: true
+  image:
+    repository: phpmyadmin
+    tag: "5.2"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8081

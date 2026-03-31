@@ -1,0 +1,35 @@
+# =============================================================
+# EKS MySQL Values — Bitnami MySQL Helm Chart
+# =============================================================
+# Runs on EC2 nodes (no Fargate label).
+# Uses the Secret created by the my-java-app chart.
+# =============================================================
+
+architecture: replication
+
+global:
+  security:
+    allowInsecureImages: true
+
+image:
+  registry: docker.io
+  repository: bitnamilegacy/mysql
+  tag: latest
+
+auth:
+  existingSecret: my-java-app-secret
+  username: ali
+  database: mydb
+
+primary:
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: gp2
+
+secondary:
+  replicaCount: 1
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: gp2
