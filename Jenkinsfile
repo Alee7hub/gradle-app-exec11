@@ -4,7 +4,8 @@ pipeline {
         jdk 'jdk-17'
     }
     environment {
-        DOCKER_REPO_NAME = 'alikakavand/demo-app'
+        DOCKER_REPO_SERVER = '320806842529.dkr.ecr.eu-central-1.amazonaws.com/java-gradle-app-exec11'
+        DOCKER_REPO_NAME = "${DOCKER_REPO_SERVER}/java-maven-app"
     }
     stages {
         stage('increment version') {
@@ -34,9 +35,9 @@ pipeline {
             steps {
                 script {
                     echo 'building the docker image...'
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-repo', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                    withCredentials([usernamePassword(credentialsId: 'ecr-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
                         sh "docker build -t ${DOCKER_REPO_NAME}:${IMAGE_VERSION} ."
-                        sh 'echo $PASS | docker login -u $USER --password-stdin'
+                        sh "echo $PASS | docker login -u $USER --password-stdin ${DOCKER_REPO_SERVER}"
                         sh "docker push ${DOCKER_REPO_NAME}:${IMAGE_VERSION}"
                     }
                 }
@@ -46,7 +47,7 @@ pipeline {
             environment {
                 AWS_ACCESS_KEY_ID = credentials('jenkins_aws_access_key_id')
                 AWS_SECRET_ACCESS_KEY = credentials('jenkins_aws_secret_access_key')
-                APP_NAME = 'my-java-app'
+                APP_NAME = 'my-jg-app'
             }
             steps {
                 script {
