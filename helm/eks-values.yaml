@@ -12,13 +12,12 @@ replicaCount: 3
 
 # ── Application image ────────────────────────────────────────
 image:
-  repository: alikakavand/demo-app
+  repository: 320806842529.dkr.ecr.eu-central-1.amazonaws.com/java-gradle-app-exec11
   tag: "eks-amd64"
   pullPolicy: IfNotPresent
 
-# ── Private registry credentials ─────────────────────────────
-imagePullSecrets:
-  - name: dockerhub-secret
+# ── ECR: no imagePullSecrets needed (IAM handles auth) ──────
+imagePullSecrets: []
 
 # ── Fargate scheduling ───────────────────────────────────────
 # This label is added ONLY to the Java app pods.
