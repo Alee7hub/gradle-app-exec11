@@ -11,11 +11,10 @@ pipeline {
             steps {
                 script {
                     echo 'incrementing app version...'
-                    def matcher = readFile('build.gradle') =~ /version '(.+)'/
-                    def currentVersion = matcher[0][1]
+                    def buildGradle = readFile('build.gradle')
+                    def currentVersion = (buildGradle =~ /version '(.+)'/)[0][1]
                     def (major, minor, patch) = currentVersion.tokenize('.').collect { it as int }
                     def newVersion = "${major}.${minor}.${patch + 1}"
-                    def buildGradle = readFile('build.gradle')
                     buildGradle = buildGradle.replaceFirst("version '${currentVersion}'", "version '${newVersion}'")
                     writeFile file: 'build.gradle', text: buildGradle
                     env.IMAGE_VERSION = "${newVersion}-${BUILD_NUMBER}"
