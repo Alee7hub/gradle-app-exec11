@@ -4,8 +4,8 @@ pipeline {
         jdk 'jdk-17'
     }
     environment {
-        DOCKER_REPO_SERVER = '320806842529.dkr.ecr.eu-central-1.amazonaws.com/java-gradle-app-exec11'
-        DOCKER_REPO_NAME = "${DOCKER_REPO_SERVER}/java-maven-app"
+        DOCKER_REPO_SERVER = '320806842529.dkr.ecr.eu-central-1.amazonaws.com'
+        DOCKER_REPO_NAME = "${DOCKER_REPO_SERVER}/java-gradle-app-exec11"
     }
     stages {
         stage('increment version') {
