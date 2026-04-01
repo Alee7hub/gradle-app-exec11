@@ -1,35 +1,43 @@
-# EKS Deployment Report
+# EKS Deployment Report — Project Overview
 
 ## Cluster: `demo-cluster` (eu-central-1)
 
-### 1. Fargate Profile Configuration
+A Java Gradle web app deployed on EKS with a CI/CD pipeline (Jenkins) that builds, pushes to ECR, and deploys via Helm.
 
-Recreated the Fargate profile (`demo-fargate-profile`) with a label selector so only pods with `scheduling: fargate` in the `default` namespace are scheduled on Fargate. This ensures MySQL and phpMyAdmin stay on EC2 nodes.
+---
 
-### 2. Nodegroup Upgrade
+### 1. Infrastructure Setup
 
-Replaced the original `t3.micro` nodegroup (`demo-nodes`) with a new `t3.small` nodegroup (`demo-nodes-small`, 3 nodes) to provide sufficient memory for MySQL.
+- **Fargate profile** (`demo-fargate-profile`) — label selector `scheduling: fargate` in the `default` namespace. Only the Java app pods run on Fargate; MySQL and phpMyAdmin stay on EC2.
+- **Nodegroup** — replaced `t3.micro` (`demo-nodes`) with `t3.small` (`demo-nodes-small`, 3 nodes) for sufficient MySQL memory.
+- **EBS CSI Driver** — IAM OIDC provider + `AmazonEKS_EBS_CSI_DriverRole` + `aws-ebs-csi-driver` addon for dynamic `gp2` volume provisioning.
 
-### 3. EBS CSI Driver
+### 2. Container Registry (ECR)
 
-- Associated an IAM OIDC provider with the cluster.
-- Created an IAM role (`AmazonEKS_EBS_CSI_DriverRole`) for the EBS CSI driver.
-- Installed the `aws-ebs-csi-driver` EKS addon to enable dynamic provisioning of `gp2` EBS volumes for MySQL persistence.
+- **Registry:** `320806842529.dkr.ecr.eu-central-1.amazonaws.com`
+- **Repository:** `java-gradle-app-exec11`
+- Initially used DockerHub (`alikakavand/demo-app`), migrated to ECR for native AWS integration.
+- ECR auth is handled by IAM roles — no `imagePullSecrets` needed on EKS.
 
-### 4. Docker Image (amd64)
+### 3. CI/CD Pipeline (Jenkins)
 
-Built and pushed a `linux/amd64` image (`alikakavand/demo-app:eks-amd64`) since the existing image was `arm64`-only and incompatible with Fargate.
+Pipeline stages (`Jenkinsfile`):
 
-### 5. Deployment via Helm
+1. **Increment version** — bumps patch version in `build.gradle`, sets `IMAGE_VERSION`.
+2. **Build app** — `./gradlew clean build`.
+3. **Build & push image** — builds Docker image, authenticates to ECR, pushes `java-gradle-app-exec11:<version>-<build>`.
+4. **Deploy** — `aws eks update-kubeconfig` → `helm upgrade --install` with `--set image.tag`.
+5. **Commit version bump** — pushes updated `build.gradle` back to GitHub.
 
-- **Java App** — `helm install my-java-app ./helm/my-java-app -f helm/eks-values.yaml` → 3 replicas on **Fargate**, exposed via LoadBalancer on port 8080.
-- **MySQL** — `helm install mysql bitnami/mysql -f k8s-config/eks-mysql-values.yaml` → Primary + Secondary on **EC2** with 10Gi gp2 EBS volumes.
-- **phpMyAdmin** — Included in the Java app chart, running on **EC2**, exposed via LoadBalancer on port 8081.
+### 4. Deployment via Helm
 
-### Final State
+- **Manual/full deploy:** `helmfile -f k8s-config/eks-helmfile.yaml sync` (deploys Java app + MySQL together).
+- **CI deploy (Jenkins):** `helm upgrade --install my-jg-app ./helm/my-java-app -f helm/eks-values.yaml --set image.tag=<version>`
 
-| Component    | Replicas | Runs On   | Service Type  |
-|--------------|----------|-----------|---------------|
-| Java App     | 3        | Fargate   | LoadBalancer  |
-| MySQL        | 1+1      | EC2       | ClusterIP     |
-| phpMyAdmin   | 1        | EC2       | LoadBalancer  |
+### 5. Final State
+
+| Component    | Replicas | Runs On   | Image Source | Service Type  |
+|--------------|----------|-----------|--------------|---------------|
+| Java App     | 3        | Fargate   | ECR          | LoadBalancer  |
+| MySQL        | 1+1      | EC2       | DockerHub    | ClusterIP     |
+| phpMyAdmin   | 1        | EC2       | DockerHub    | LoadBalancer  |

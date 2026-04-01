@@ -13,7 +13,7 @@ replicaCount: 3
 # ── Application image ────────────────────────────────────────
 image:
   repository: 320806842529.dkr.ecr.eu-central-1.amazonaws.com/java-gradle-app-exec11
-  tag: "eks-amd64"
+  tag: "3.5.10-9"
   pullPolicy: IfNotPresent
 
 # ── ECR: no imagePullSecrets needed (IAM handles auth) ──────

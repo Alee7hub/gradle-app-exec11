@@ -2,3 +2,4 @@
 build
 out
 .gradle*
+workflow_vis/
